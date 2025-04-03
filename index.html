@@ -1,0 +1,155 @@
+import { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import QRCode from "react-qr-code";
+
+export default function NetSurveyApp() {
+  const [step, setStep] = useState(1);
+  const [category, setCategory] = useState([]);
+  const [socialApp, setSocialApp] = useState("");
+  const [entertainmentApp, setEntertainmentApp] = useState("");
+  const [usageDetail, setUsageDetail] = useState({
+    category: 0,
+    social: 0,
+    entertainment: 0,
+  });
+  const [hotspot, setHotspot] = useState("");
+  const [result, setResult] = useState("");
+
+  const toggleCategory = (value) => {
+    setCategory((prev) =>
+      prev.includes(value)
+        ? prev.filter((item) => item !== value)
+        : [...prev, value]
+    );
+  };
+
+  const estimateResult = () => {
+    const { category: catMin, social: socMin, entertainment: entMin } = usageDetail;
+    let mbPerDay = catMin * 5 + socMin * 10 + entMin * 25;
+
+    let multiplier = 1;
+    if (hotspot === "บ่อยครั้ง") multiplier = 1.5;
+    else if (hotspot === "ปลานกลาง") multiplier = 1.2;
+
+    const totalGB = ((mbPerDay * 30) / 1024) * multiplier;
+
+    if (totalGB < 10) {
+      setResult("แนะนำแพ็กเกจ: Net 10GB/เดือน (เหมาะสำหรับใช้งานทั่วไป)");
+    } else if (totalGB < 30) {
+      setResult("แนะนำแพ็กเกจ: Net 30GB/เดือน (เหมาะสำหรับใช้งานปานกลาง)");
+    } else {
+      setResult("แนะนำแพ็กเกจ: Net ไม่อั้น (เหมาะสำหรับใช้งานหนักหรือแชร์ฮอตสปอต)");
+    }
+  };
+
+  const appUrl = "https://your-net-app-url.com";
+
+  return (
+    <div className="max-w-xl mx-auto p-4 space-y-4">
+      <h1 className="text-xl font-bold text-center">📶 ประเมินการใช้งานเน็ตของคุณ</h1>
+
+      <div className="flex justify-center">
+        <Card>
+          <CardContent className="flex flex-col items-center pt-4 space-y-2">
+            <p className="text-sm">สแกน QR เพื่อเปิดแบบประเมินบนมือถือ</p>
+            <QRCode value={appUrl} size={128} />
+          </CardContent>
+        </Card>
+      </div>
+
+      {step === 1 && (
+        <Card>
+          <CardContent className="space-y-2 pt-4">
+            <Label>หน้าที่ 1: คุณใช้ Application ประเภทไหนบ่อยที่สุด? (เลือกได้มากกว่า 1 ข้อ)</Label>
+            {['สังคมออนไลน์', 'ความบันเทิง', 'สืบค้นข้อมูล', 'อื่นๆ'].map((item) => (
+              <div key={item} className="flex items-center space-x-2">
+                <Checkbox checked={category.includes(item)} onCheckedChange={() => toggleCategory(item)} />
+                <Label>{item}</Label>
+              </div>
+            ))}
+            <Button className="w-full" onClick={() => setStep(2)}>ถัดไป</Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {step === 2 && (
+        <Card>
+          <CardContent className="space-y-2 pt-4">
+            <Label>หน้าที่ 2: คุณใช้ Application ออนไลน์ไหนบ่อยที่สุด?</Label>
+            <RadioGroup value={socialApp} onValueChange={setSocialApp}>
+              {['Facebook', 'LINE', 'Instagram', 'X', 'Whatsapp', 'อื่นๆ'].map((app) => (
+                <div key={app} className="flex items-center space-x-2">
+                  <RadioGroupItem value={app} id={app} />
+                  <Label htmlFor={app}>{app}</Label>
+                </div>
+              ))}
+            </RadioGroup>
+            <Button className="w-full" onClick={() => setStep(3)}>ถัดไป</Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {step === 3 && (
+        <Card>
+          <CardContent className="space-y-2 pt-4">
+            <Label>หน้าที่ 3: คุณใช้ Application ความบันเทิงไหนบ่อยที่สุด?</Label>
+            <RadioGroup value={entertainmentApp} onValueChange={setEntertainmentApp}>
+              {['YouTube', 'TikTok', 'Netflix', 'VIU', 'อื่นๆ'].map((app) => (
+                <div key={app} className="flex items-center space-x-2">
+                  <RadioGroupItem value={app} id={app} />
+                  <Label htmlFor={app}>{app}</Label>
+                </div>
+              ))}
+            </RadioGroup>
+            <Button className="w-full" onClick={() => setStep(4)}>ถัดไป</Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {step === 4 && (
+        <Card>
+          <CardContent className="space-y-4 pt-4">
+            <Label>หน้าที่ 4: คุณใช้ {category.join(", ")} บ่อยแค่ไหน/วัน (นาที)</Label>
+            <Input type="number" value={usageDetail.category} onChange={(e) => setUsageDetail({ ...usageDetail, category: Number(e.target.value) })} />
+            <Label>คุณใช้ {socialApp} บ่อยแค่ไหน/วัน (นาที)</Label>
+            <Input type="number" value={usageDetail.social} onChange={(e) => setUsageDetail({ ...usageDetail, social: Number(e.target.value) })} />
+            <Label>คุณใช้ {entertainmentApp} บ่อยแค่ไหน/วัน (นาที)</Label>
+            <Input type="number" value={usageDetail.entertainment} onChange={(e) => setUsageDetail({ ...usageDetail, entertainment: Number(e.target.value) })} />
+            <Button className="w-full" onClick={() => setStep(5)}>ถัดไป</Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {step === 5 && (
+        <Card>
+          <CardContent className="space-y-2 pt-4">
+            <Label>หน้าที่ 5: คุณมีการใช้ฮอตสปอตส่วนบุคคลมากหรือไม่?</Label>
+            <RadioGroup value={hotspot} onValueChange={setHotspot}>
+              {['บ่อยครั้ง', 'ปลานกลาง', 'ไม่เลย'].map((opt) => (
+                <div key={opt} className="flex items-center space-x-2">
+                  <RadioGroupItem value={opt} id={opt} />
+                  <Label htmlFor={opt}>{opt}</Label>
+                </div>
+              ))}
+            </RadioGroup>
+            <Button className="w-full" onClick={() => { estimateResult(); setStep(6); }}>ประมวลผล</Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {step === 6 && (
+        <Card>
+          <CardContent className="text-center pt-4 space-y-4">
+            <p className="text-lg font-semibold">หน้าที่ 6: {result}</p>
+            <Button variant="outline" onClick={() => setStep(1)}>เริ่มต้นใหม่</Button>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
